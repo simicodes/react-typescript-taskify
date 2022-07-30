@@ -2,58 +2,75 @@ import React, { useState } from "react";
 import "./App.css";
 import InputField from "./components/InputField";
 import TodoList from "./components/TodoList";
+import { DragDropContext, DropResult } from "react-beautiful-dnd";
 import { Todo } from "./model";
 
-// let name: string;
-// let age: number;
-// let isStudent: boolean;
-// let hobbies: number[];
-// //Tuples
-// let role: [number, string];
-// //object
-// type Person = {
-//   name: string;
-//   age: number;
-// };
-
-// let person: Person = {
-//   name: "Simi",
-//   age: 5,
-// };
-
-// function printName(name:string) {
-//   console.log(name);
-// }
-
 const App: React.FC = () => {
-  //State
   const [todo, setTodo] = useState<string>("");
-  console.log(todo);
-  const [todos, setTodos] = useState<Todo[]>([]);
+  const [todos, setTodos] = useState<Array<Todo>>([]);
+  const [CompletedTodos, setCompletedTodos] = useState<Array<Todo>>([]);
 
   const handleAdd = (e: React.FormEvent) => {
     e.preventDefault();
 
-    //if things are inside todo
     if (todo) {
       setTodos([...todos, { id: Date.now(), todo, isDone: false }]);
-      //Empty the todo field
       setTodo("");
     }
   };
 
-  console.log(todos);
+  const onDragEnd = (result: DropResult) => {
+    const { destination, source } = result;
+
+    console.log(result);
+
+    if (!destination) {
+      return;
+    }
+
+    if (
+      destination.droppableId === source.droppableId &&
+      destination.index === source.index
+    ) {
+      return;
+    }
+
+    let add;
+    let active = todos;
+    let complete = CompletedTodos;
+    // Source Logic
+    if (source.droppableId === "TodosList") {
+      add = active[source.index];
+      active.splice(source.index, 1);
+    } else {
+      add = complete[source.index];
+      complete.splice(source.index, 1);
+    }
+
+    // Destination Logic
+    if (destination.droppableId === "TodosList") {
+      active.splice(destination.index, 0, add);
+    } else {
+      complete.splice(destination.index, 0, add);
+    }
+
+    setCompletedTodos(complete);
+    setTodos(active);
+  };
 
   return (
-    <div className="App">
-      <span className="heading">Taskify</span>
-      <InputField todo={todo} setTodo={setTodo} handleAdd={handleAdd} />
-      <TodoList  todos={todos} setTodos={setTodos}/>
-
-      {/* {todos.map((t) => (
-        <li>{t.todo}</li>
-      ))} */}
-    </div>
+    <DragDropContext onDragEnd={onDragEnd}>
+      <div className="App">
+        <span className="heading">Taskify</span>
+        <InputField todo={todo} setTodo={setTodo} handleAdd={handleAdd} />
+        <TodoList
+          todos={todos}
+          setTodos={setTodos}
+          CompletedTodos={CompletedTodos}
+          setCompletedTodos={setCompletedTodos}
+        />
+      </div>
+    </DragDropContext>
   );
 };
 
